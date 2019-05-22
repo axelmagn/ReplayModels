@@ -3,6 +3,7 @@ import gzip
 import io
 import os
 import pandas as pd
+import pickle
 
 import carball
 import requests
@@ -87,3 +88,47 @@ class Carball(DataManager):
         manager = carball.analyze_replay_file(path, "replay.json")
         self.REPLAYS_MAP[id_] = manager
         return manager
+
+class FileCachedCalculated(DataManager):
+    """
+    Caches replays from a calculated data manager into pickle files.
+    """
+
+    DEFAULT_REPLAYS_CACHE_PATH = '.replays_cache'
+    def __init__(self, cache_path=None):
+        if cache_path is None:
+            cache_path = os.path.join(os.environ['HOME'], self.DEFAULT_REPLAYS_CACHE_PATH)
+        print("Caching replays at: {}".format(cache_path))
+        self.cache_path = cache_path
+        self.wrapped_manager = Calculated()
+
+    def _setup_cache(self):
+        if not os.path.exists(self.cache_path):
+            os.makedirs(self.cache_path)
+
+
+
+    def get_replay_list(self, num=50, page=1):
+        return self.wrapped_manager.get_replay_list(num, page)
+
+    def get_pandas(self, id_):
+        self._setup_cache()
+        pickle_path = os.path.join(self.cache_path, "{}.pandas.pkl.gz".format(id_))
+        if os.path.isfile(pickle_path):
+            return pd.read_pickle(pickle_path)
+        else:
+            result = self.wrapped_manager.get_pandas(id_)
+            result.to_pickle(pickle_path)
+            return result
+
+    def get_proto(self, id_):
+        self._setup_cache()
+        pickle_path = os.path.join(self.cache_path, "{}.proto".format(id_))
+        if os.path.isfile(pickle_path):
+            with open(pickle_path, 'rb') as f:
+                return ProtobufManager.read_proto_out_from_file(f)
+        else:
+            result = self.wrapped_manager.get_proto(id_)
+            with open(pickle_path, 'wb') as f:
+                f.write(result.SerializeToString())
+            return result
