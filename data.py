@@ -118,7 +118,8 @@ class FileCachedCalculated(DataManager):
             return pd.read_pickle(pickle_path)
         else:
             result = self.wrapped_manager.get_pandas(id_)
-            result.to_pickle(pickle_path)
+            if result is not None:
+                result.to_pickle(pickle_path)
             return result
 
     def get_proto(self, id_):
@@ -129,6 +130,7 @@ class FileCachedCalculated(DataManager):
                 return ProtobufManager.read_proto_out_from_file(f)
         else:
             result = self.wrapped_manager.get_proto(id_)
-            with open(pickle_path, 'wb') as f:
-                f.write(result.SerializeToString())
+            if result is not None:
+                with open(pickle_path, 'wb') as f:
+                    f.write(result.SerializeToString())
             return result
