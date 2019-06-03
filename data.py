@@ -42,9 +42,9 @@ class Calculated(DataManager):
             return self.PANDAS_MAP[id_]
         # url = BASE_URL + 'parsed/{}.replay.gzip?key=1'.format(id_)
         url = "https://storage.googleapis.com/calculatedgg-parsed/{GUID}.replay.gzip".format(GUID=id_)
-        r = requests.get(url)
-        gzip_file = gzip.GzipFile(fileobj=io.BytesIO(r.content), mode='rb')
         try:
+            r = requests.get(url)
+            gzip_file = gzip.GzipFile(fileobj=io.BytesIO(r.content), mode='rb')
             pandas_ = PandasManager.safe_read_pandas_to_memory(gzip_file)
         except:
             self.PANDAS_MAP[id_] = None
